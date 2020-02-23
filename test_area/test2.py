@@ -8,18 +8,20 @@ import matplotlib.pyplot as plt
 import time
 
 from tensorflow.keras.models import Sequential
-from tensorflow.keras.layers import Dense, Dropout, Conv2D, MaxPool2D, Flatten
+from tensorflow.keras.layers import Dense, Dropout, Conv2D, MaxPool2D, Flatten, BatchNormalization
 from tensorflow.keras.preprocessing.image import ImageDataGenerator
+from multiprocessing import cpu_count
 
 # Record start time for the whole module
 start = time.time()
 
 # create generator
-datagen = ImageDataGenerator()
+datagen = ImageDataGenerator(rescale=1. / 255)
 
 # prepare an iterators for each dataset
-target_size = (28,28)
-batch_size = 16
+dim_xy = 64  #a:28
+target_size = (dim_xy,dim_xy)
+batch_size = 64  #a:28
 seed = 42
 interpolation = 'bicubic'
 color_mode='grayscale'
@@ -35,24 +37,38 @@ print('Batch shape=%s, min=%.3f, max=%.3f' % (batchX.shape, batchX.min(), batchX
 #plt.imshow(batchX[2,:,:,:].reshape(28,28), cmap='binary')
 
 def create_model():
-    dropout = 0.2
-
     model = Sequential()
-    model.add(Conv2D(128, kernel_size=4, activation='relu', input_shape=(28, 28, 1), padding='same'))
+
+    #1.
+    model.add(Conv2D(32, kernel_size=3, activation='relu', padding='same', input_shape=(dim_xy, dim_xy, 1)))
+    model.add(BatchNormalization())
+    model.add(Conv2D(32, kernel_size=3, activation='relu', padding='same'))
+    model.add(BatchNormalization())
     model.add(MaxPool2D(2))
-    model.add(Conv2D(64, kernel_size=6, activation='relu', padding='same'))
-    #model.add(MaxPool2D(2))
-    model.add(Conv2D(32, kernel_size=7, activation='relu', padding='same'))
-    #model.add(MaxPool2D(2))
+    model.add(Dropout(0.25))
+
+    #2.
+    model.add(Conv2D(64, kernel_size=3, activation='relu', padding='same'))
+    model.add(BatchNormalization())
+    model.add(Conv2D(64, kernel_size=3, activation='relu', padding='same'))
+    model.add(BatchNormalization())
+    model.add(MaxPool2D(2))
+    model.add(Dropout(0.25))
+
+    #3.
     model.add(Flatten())
-    model.add(Dense(128, activation='relu'))
-    model.add(Dropout(dropout))
-    model.add(Dense(64, activation='relu'))
-    model.add(Dropout(dropout))
+    model.add(Dense(512, activation='relu'))  #a:512
+    model.add(BatchNormalization())
+    model.add(Dropout(0.25))
+    model.add(Dense(1024, activation='relu')) #a:1024
+    model.add(BatchNormalization())
+    model.add(Dropout(0.50))                 #a:0.50
+
+    #4.
     model.add(Dense(5, activation='softmax'))
 
     model.summary()
-    model.compile(optimizer='adam', loss='categorical_crossentropy', metrics=['accuracy'])
+    model.compile(optimizer='rmsprop', loss='categorical_crossentropy', metrics=['accuracy'])
 
     return (model)
 
@@ -60,13 +76,14 @@ def create_model():
 model = create_model()
 
 model_start = time.time()
-history = model.fit(train_it,
-                    validation_data=val_it,
-                    epochs=3,
-                    steps_per_epoch=16,
-                    validation_steps=8,
-                    use_multiprocessing = True)
-
+history = model.fit_generator(
+                            generator=train_it,
+                            validation_data=val_it,
+                            epochs=3,
+                            max_queue_size=32,
+                            workers=cpu_count(),
+                            use_multiprocessing = True,
+                            )
 # history = model.fit(X_train, y_train, validation_data=(X_val, y_val), epochs=12, batch_size=128, callbacks=[tb_callback])
 model_end = time.time()
 print("\nModel trained. Elapse time (s): ", (model_end - model_start))
