@@ -19,9 +19,9 @@ start = time.time()
 datagen = ImageDataGenerator(rescale=1. / 255)
 
 # prepare an iterators for each dataset
-dim_xy = 64  #a:28
+dim_xy = 28  #a:28
 target_size = (dim_xy,dim_xy)
-batch_size = 64  #a:28
+batch_size = 512  #a:28
 seed = 42
 interpolation = 'bicubic'
 color_mode='grayscale'
