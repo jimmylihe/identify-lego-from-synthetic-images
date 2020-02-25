@@ -1,12 +1,8 @@
 # Import modules
 import numpy as np
 import matplotlib
-#matplotlib.use('agg')
-#%matplotlib inline
 import matplotlib.pyplot as plt
-
 import time
-
 from tensorflow.keras.models import Sequential
 from tensorflow.keras.layers import Dense, Dropout, Conv2D, MaxPool2D, Flatten, BatchNormalization
 from tensorflow.keras.preprocessing.image import ImageDataGenerator
@@ -21,7 +17,7 @@ datagen = ImageDataGenerator(rescale=1. / 255)
 # prepare an iterators for each dataset
 dim_xy = 28  #a:28
 target_size = (dim_xy,dim_xy)
-batch_size = 512  #a:28
+batch_size = 64  #a:28
 seed = 42
 interpolation = 'bicubic'
 color_mode='grayscale'
@@ -81,8 +77,8 @@ history = model.fit_generator(
                             validation_data=val_it,
                             epochs=3,
                             max_queue_size=32,
-                            workers=cpu_count(),
-                            use_multiprocessing = True,
+                            #workers=cpu_count(),
+                            #use_multiprocessing = True,
                             )
 # history = model.fit(X_train, y_train, validation_data=(X_val, y_val), epochs=12, batch_size=128, callbacks=[tb_callback])
 model_end = time.time()
