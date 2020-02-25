@@ -1,3 +1,8 @@
+import plaidml.keras
+plaidml.keras.install_backend()
+import os
+os.environ["KERAS_BACKEND"] = "plaidml.keras.backend"
+
 from keras.preprocessing.image import ImageDataGenerator
 import tensorflow as tf
 from tensorboard.plugins.hparams import api as hp
@@ -49,7 +54,7 @@ def train_test_model(hparams):
     test_batch_generator = test_it
     model.fit_generator(generator=train_batch_generator,
                         epochs=2,
-                        verbose=2,
+                        verbose=1,
                         use_multiprocessing=False,
                         workers=cpu_count(),
                         max_queue_size=32,
