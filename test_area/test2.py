@@ -84,7 +84,7 @@ history = model.fit_generator(
 model_end = time.time()
 print("\nModel trained. Elapse time (s): ", (model_end - model_start))
 
-score = model.evaluate(X_test, y_test)
-print("Model score (on test set):", score)
-end = time.time()
+#score = model.evaluate(X_test, y_test)
+#print("Model score (on test set):", score)
+#end = time.time()
 
