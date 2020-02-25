@@ -132,10 +132,10 @@ def evaluate_model(model):
     _, test1_accuracy = model.evaluate_generator(test1_it, verbose=verbose, workers=workers)
     _, test2_accuracy = model.evaluate_generator(test2_it, verbose=verbose, workers=workers)
 
-    print(f"Train accuracy = " , train_accuracy)
-    print(f"Val accuracy = ", val_accuracy)
-    print(f"Test1 accuracy = ", test1_accuracy)
-    print(f"Test2 accuracy = ", test2_accuracy)
+    print("Train accuracy = " , train_accuracy)
+    print("Val accuracy = ", val_accuracy)
+    print("Test1 accuracy = ", test1_accuracy)
+    print("Test2 accuracy = ", test2_accuracy)
 
 # Main
 model_name = "mini5b_base1"
