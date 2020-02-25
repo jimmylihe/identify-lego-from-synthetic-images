@@ -96,9 +96,8 @@ def train_model(model):
 
 # REF: https://machinelearningmastery.com/save-load-keras-deep-learning-models/
 def save_model(model, model_name):
-
-    fn_json = os.path.join(path_models, f"{model_name}.json")
-    fn_weights = os.path.join(path_models, f"{model_name}.h5")
+    fn_json = os.path.join(path_models, model_name + ".json")
+    fn_weights = os.path.join(path_models, model_name + ".h5")
 
     # serialize model to JSON
     model_json = model.to_json()
@@ -107,11 +106,11 @@ def save_model(model, model_name):
     # serialize weights to HDF5
     model.save_weights(fn_weights)
 
-    print(f"Saved model {model_name} to disk")
+    print(f"Saved model " + model_name + " to disk")
 
 def load_model(model_name):
-    fn_json = os.path.join(path_models, f"{model_name}.json")
-    fn_weights = os.path.join(path_models, f"{model_name}.h5")
+    fn_json = os.path.join(path_models, model_name + ".json")
+    fn_weights = os.path.join(path_models, model_name + ".h5")
 
     json_file = open(fn_json, 'r')
 
@@ -121,7 +120,7 @@ def load_model(model_name):
     # load weights into new model
     loaded_model.load_weights(fn_weights)
     loaded_model.compile(optimizer='rmsprop', loss='categorical_crossentropy', metrics=['accuracy'])
-    print(f"Loaded model {model_name} from disk")
+    print(f"Loaded model " + model_name + " from disk")
     return loaded_model
 
 def evaluate_model(model):
@@ -133,10 +132,10 @@ def evaluate_model(model):
     _, test1_accuracy = model.evaluate_generator(test1_it, verbose=verbose, workers=workers)
     _, test2_accuracy = model.evaluate_generator(test2_it, verbose=verbose, workers=workers)
 
-    print(f"Train accuracy = {train_accuracy}")
-    print(f"Val accuracy = {val_accuracy}")
-    print(f"Test1 accuracy = {test1_accuracy}")
-    print(f"Test2 accuracy = {test2_accuracy}")
+    print(f"Train accuracy = " , train_accuracy)
+    print(f"Val accuracy = ", val_accuracy)
+    print(f"Test1 accuracy = ", test1_accuracy)
+    print(f"Test2 accuracy = ", test2_accuracy)
 
 # Main
 model_name = "mini5b_base1"
