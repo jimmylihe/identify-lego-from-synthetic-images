@@ -106,7 +106,7 @@ def save_model(model, model_name):
     # serialize weights to HDF5
     model.save_weights(fn_weights)
 
-    print(f"Saved model " + model_name + " to disk")
+    print("Saved model " + model_name + " to disk")
 
 def load_model(model_name):
     fn_json = os.path.join(path_models, model_name + ".json")
@@ -120,7 +120,7 @@ def load_model(model_name):
     # load weights into new model
     loaded_model.load_weights(fn_weights)
     loaded_model.compile(optimizer='rmsprop', loss='categorical_crossentropy', metrics=['accuracy'])
-    print(f"Loaded model " + model_name + " from disk")
+    print("Loaded model " + model_name + " from disk")
     return loaded_model
 
 def evaluate_model(model):
