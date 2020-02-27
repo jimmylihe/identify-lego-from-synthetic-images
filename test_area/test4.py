@@ -20,7 +20,7 @@ path_models = "../models"
 
 dim_xy = 28  #a:28
 target_size = (dim_xy,dim_xy)
-batch_size = 64  #a:28
+batch_size = 64  #a:64
 seed = 42
 interpolation = 'bicubic'
 color_mode='grayscale'
@@ -85,7 +85,7 @@ def train_model(model):
                                 validation_data=val_it,
                                 epochs=3,
                                 max_queue_size=32,
-                                workers=cpu_count(),
+                                #workers=cpu_count(),
                                 #steps_per_epoch=16,    # testing only! leave commented out
                                 #validation_steps=16,    # testing only! leave commented out
                                 #use_multiprocessing = True,
