@@ -79,13 +79,15 @@ def create_model():
     return (model)
 
 def train_model(model):
+    workers = cpu_count()
+
     model_start = time.time()
     history = model.fit_generator(
                                 generator=train_it,
                                 validation_data=val_it,
                                 epochs=3,
                                 max_queue_size=32,
-                                #workers=cpu_count(),
+                                #workers=workers,
                                 #steps_per_epoch=16,    # testing only! leave commented out
                                 #validation_steps=16,    # testing only! leave commented out
                                 #use_multiprocessing = True,
