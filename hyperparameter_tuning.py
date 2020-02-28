@@ -12,11 +12,11 @@ import time
 from multiprocessing import cpu_count
 from random import randint
 
-
+session_num_init = 1
 num_class = 3
-batch_sizes_ = [256, 512]
-res_xys = [32]
-epoch_upper = 150
+batch_sizes_ = [64]
+res_xys = [64]
+epoch_upper = 5
 max_queue_size_ = 2 * max(batch_sizes_)
 workers_ = cpu_count()
 
@@ -61,21 +61,21 @@ def train_test_model(hparams):
     datagen = ImageDataGenerator(rescale=1. / 255, preprocessing_function=convert_black_to_white)
 
     # load and iterate training dataset
-    train_it = datagen.flow_from_directory('C:/Users/Grace/PycharmProjects/Jimi/Dataset_mini3b/train', shuffle=False,
+    train_it = datagen.flow_from_directory('C:/Users/Grace/PycharmProjects/Jimi/Dataset_mini3b/train', shuffle=True,
                                            class_mode='categorical', batch_size=hparams[HP_BATCH_SIZE], target_size=(hparams[HP_RES], hparams[HP_RES]),
                                            color_mode='grayscale')
     # load and iterate validation dataset
-    val_it = datagen.flow_from_directory('C:/Users/Grace/PycharmProjects/Jimi/Dataset_mini3b/val', shuffle=False,
+    val_it = datagen.flow_from_directory('C:/Users/Grace/PycharmProjects/Jimi/Dataset_mini3b/val', shuffle=True,
                                          class_mode='categorical', batch_size=hparams[HP_BATCH_SIZE], target_size=(hparams[HP_RES], hparams[HP_RES]),
                                          color_mode='grayscale')
     # load and iterate test dataset
     test_it = datagen.flow_from_directory('C:/Users/Grace/PycharmProjects/Jimi/Dataset_mini3b/test1', shuffle=True,
-                                          class_mode='categorical', batch_size=hparams[HP_BATCH_SIZE], seed=42, target_size=(hparams[HP_RES], hparams[HP_RES]),
+                                          class_mode='categorical', batch_size=hparams[HP_BATCH_SIZE], target_size=(hparams[HP_RES], hparams[HP_RES]),
                                           color_mode='grayscale')
     # load and iterate test dataset
     datagen_real = ImageDataGenerator(rescale=1. / 255)
     test_it_real = datagen_real.flow_from_directory('C:/Users/Grace/PycharmProjects/Jimi/Dataset_mini3b/test2', shuffle=True,
-                                                    class_mode='categorical', batch_size=hparams[HP_BATCH_SIZE], seed=42, target_size=(hparams[HP_RES], hparams[HP_RES]),
+                                                    class_mode='categorical', batch_size=hparams[HP_BATCH_SIZE], target_size=(hparams[HP_RES], hparams[HP_RES]),
                                                     color_mode='grayscale')
 
 
@@ -88,16 +88,18 @@ def train_test_model(hparams):
     model.add(Conv2D(hparams[HP_NUM_UNITS_CL2], kernel_size=hparams[HP_KERNEL_SIZE_CL2], strides=hparams[HP_STRIDES_CL2], padding='same'))
     model.add(BatchNormalization())
     model.add(Activation('relu'))
+
     model.add(MaxPool2D(pool_size=hparams[HP_POOL_SIZE_PL1]))
     model.add(Dropout(hparams[HP_DROPOUT_CL2]))
 
-    model.add(Conv2D(hparams[HP_NUM_UNITS_CL3], kernel_size=hparams[HP_KERNEL_SIZE_CL3], strides=hparams[HP_STRIDES_CL3], padding='same'))
-    model.add(BatchNormalization())
-    model.add(Activation('relu'))
+    #model.add(Conv2D(hparams[HP_NUM_UNITS_CL3], kernel_size=hparams[HP_KERNEL_SIZE_CL3], strides=hparams[HP_STRIDES_CL3], padding='same'))
+    #model.add(BatchNormalization())
+    #model.add(Activation('relu'))
 
-    model.add(Conv2D(hparams[HP_NUM_UNITS_CL4], kernel_size=hparams[HP_KERNEL_SIZE_CL4], strides=hparams[HP_STRIDES_CL4], padding='same'))
-    model.add(BatchNormalization())
-    model.add(Activation('relu'))
+    #model.add(Conv2D(hparams[HP_NUM_UNITS_CL4], kernel_size=hparams[HP_KERNEL_SIZE_CL4], strides=hparams[HP_STRIDES_CL4], padding='same'))
+    #model.add(BatchNormalization())
+    #model.add(Activation('relu'))
+
     model.add(MaxPool2D(pool_size=hparams[HP_POOL_SIZE_PL2]))
     model.add(Dropout(hparams[HP_DROPOUT_CL4]))
 
@@ -113,9 +115,9 @@ def train_test_model(hparams):
     model.add(Dropout(hparams[HP_DROPOUT_DL2]))
 
     model.add(Dense(num_class, activation='softmax'))
-    sgd = keras.optimizers.SGD(learning_rate=0.01, momentum=hparams[HP_OPTIMIZER_PARAM], nesterov=False)
+    adam = keras.optimizers.Adam(learning_rate=0.001, beta_1=0.9, beta_2=0.999, amsgrad=hparams[HP_OPTIMIZER_PARAM])
 
-    model.compile(optimizer=sgd, loss='categorical_crossentropy', metrics=['accuracy'])
+    model.compile(optimizer=adam, loss='categorical_crossentropy', metrics=['accuracy'])
 
     print(model.summary())
 
@@ -124,9 +126,7 @@ def train_test_model(hparams):
     filepath = "-{epoch:02d}-{val_accuracy:.2f}.hdf5"
     checkpoint_callback = keras.callbacks.ModelCheckpoint(filepath=('C:/Users/Grace/PycharmProjects/Jimi/logs/hparam_tuning_DL_3/' + 'model_' + str(run_name) + filepath),
                                                           monitor='val_accuracy', verbose=1, save_best_only=True)
-    reduce_lr = keras.callbacks.ReduceLROnPlateau(monitor='val_loss', factor=0.2,
-                                                  patience=5, cooldown=1)
-    es_callback = keras.callbacks.EarlyStopping(monitor='val_accuracy', patience=int(epoch_upper/2), verbose=1)
+    es_callback = keras.callbacks.EarlyStopping(monitor='val_accuracy', patience=max(int(epoch_upper/2), 5), verbose=1)
 
 
     train_batch_generator = train_it
@@ -140,7 +140,7 @@ def train_test_model(hparams):
                         workers=workers_,
                         max_queue_size=max_queue_size_,
                         validation_data=validation_batch_generator,
-                        callbacks=[time_callback, tensorboard_callback, checkpoint_callback, reduce_lr, es_callback]
+                        callbacks=[time_callback, tensorboard_callback, checkpoint_callback, es_callback]
                         )
     _, train_accuracy = model.evaluate_generator(generator=train_batch_generator,
                                                  max_queue_size=max_queue_size_,
@@ -207,14 +207,14 @@ def main():
     HP_POOL_SIZE_PL2 = hp.HParam('pl2_pool_size', hp.Discrete([2]))
     HP_DROPOUT_CL4 = hp.HParam('cl4_dropout', hp.Discrete([0.25]))
 
-    HP_NUM_UNITS_DLl = hp.HParam('dl1_num_units', hp.Discrete([512]))
+    HP_NUM_UNITS_DLl = hp.HParam('dl1_num_units', hp.Discrete([128]))
     HP_DROPOUT_DL1 = hp.HParam('dl1_dropout', hp.Discrete([0.25]))
-    HP_NUM_UNITS_DL2 = hp.HParam('dl2_num_units', hp.Discrete([1024]))
+    HP_NUM_UNITS_DL2 = hp.HParam('dl2_num_units', hp.Discrete([64]))
     HP_DROPOUT_DL2 = hp.HParam('dl2_dropout', hp.Discrete([0.5]))
     HP_BATCH_SIZE = hp.HParam('batch_size', hp.Discrete(batch_sizes_))
     HP_RES = hp.HParam('res', hp.Discrete(res_xys))
 
-    HP_OPTIMIZER_PARAM = hp.HParam('optimizer parameter', hp.Discrete([0.0]))
+    HP_OPTIMIZER_PARAM = hp.HParam('optimizer parameter', hp.Discrete([False]))
     METRIC_TRAIN_ACCURACY = 'Train Accuracy'
     METRIC_VAL_ACCURACY = 'Validation Accuracy'
     METRIC_TEST1_ACCURACY = 'Test1 Accuracy'
@@ -232,7 +232,7 @@ def main():
                      hp.Metric(METRIC_TIME, display_name='average seconds per epoch')]
         )
 
-    session_num = 1
+    session_num = session_num_init
     for a,b,c,d,e,f,g,h,i,j,k,l,m,n,o,p,q,r,s,t,u,v,w in product(HP_NUM_UNITS_CLl.domain.values, HP_KERNEL_SIZE_CLl.domain.values, HP_STRIDES_CLl.domain.values, HP_NUM_UNITS_CL2.domain.values, HP_KERNEL_SIZE_CL2.domain.values, HP_STRIDES_CL2.domain.values, HP_POOL_SIZE_PL1.domain.values, HP_DROPOUT_CL2.domain.values,
                                                                 HP_NUM_UNITS_CL3.domain.values, HP_KERNEL_SIZE_CL3.domain.values, HP_STRIDES_CL3.domain.values, HP_NUM_UNITS_CL4.domain.values, HP_KERNEL_SIZE_CL4.domain.values, HP_STRIDES_CL4.domain.values, HP_POOL_SIZE_PL2.domain.values, HP_DROPOUT_CL4.domain.values,
                                                                 HP_NUM_UNITS_DLl.domain.values, HP_DROPOUT_DL1.domain.values, HP_NUM_UNITS_DL2.domain.values, HP_DROPOUT_DL2.domain.values,
