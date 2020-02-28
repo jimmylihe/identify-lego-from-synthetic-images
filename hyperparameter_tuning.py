@@ -92,13 +92,13 @@ def train_test_model(hparams):
     model.add(MaxPool2D(pool_size=hparams[HP_POOL_SIZE_PL1]))
     model.add(Dropout(hparams[HP_DROPOUT_CL2]))
 
-    #model.add(Conv2D(hparams[HP_NUM_UNITS_CL3], kernel_size=hparams[HP_KERNEL_SIZE_CL3], strides=hparams[HP_STRIDES_CL3], padding='same'))
-    #model.add(BatchNormalization())
-    #model.add(Activation('relu'))
+    model.add(Conv2D(hparams[HP_NUM_UNITS_CL3], kernel_size=hparams[HP_KERNEL_SIZE_CL3], strides=hparams[HP_STRIDES_CL3], padding='same'))
+    model.add(BatchNormalization())
+    model.add(Activation('relu'))
 
-    #model.add(Conv2D(hparams[HP_NUM_UNITS_CL4], kernel_size=hparams[HP_KERNEL_SIZE_CL4], strides=hparams[HP_STRIDES_CL4], padding='same'))
-    #model.add(BatchNormalization())
-    #model.add(Activation('relu'))
+    model.add(Conv2D(hparams[HP_NUM_UNITS_CL4], kernel_size=hparams[HP_KERNEL_SIZE_CL4], strides=hparams[HP_STRIDES_CL4], padding='same'))
+    model.add(BatchNormalization())
+    model.add(Activation('relu'))
 
     model.add(MaxPool2D(pool_size=hparams[HP_POOL_SIZE_PL2]))
     model.add(Dropout(hparams[HP_DROPOUT_CL4]))
