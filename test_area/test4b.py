@@ -3,9 +3,13 @@ import numpy as np
 import matplotlib.pyplot as plt
 import time
 import os
-from tensorflow.keras.models import Sequential, model_from_json
-from tensorflow.keras.layers import Dense, Dropout, Conv2D, MaxPool2D, Flatten, BatchNormalization
-from tensorflow.keras.preprocessing.image import ImageDataGenerator
+
+import tensorflow as tf
+import keras
+from keras.models import Sequential, model_from_json
+from keras.layers import Dense, Dropout, Conv2D, MaxPool2D, Flatten, BatchNormalization
+from keras.preprocessing.image import ImageDataGenerator
+
 from multiprocessing import cpu_count
 
 # Record start time for the whole module
