@@ -8,15 +8,18 @@ import gc
 from itertools import product
 import numpy as np
 import cv2
-import time
 from multiprocessing import cpu_count
-from random import randint
+import winsound
+import time
 
+"""
+AAA
+"""
 session_num_init = 1
 num_class = 3
-batch_sizes_ = [64]
-res_xys = [64]
-epoch_upper = 5
+batch_sizes_ = [16, 64, 256]
+res_xys = [16, 32, 64]
+epoch_upper = 50
 max_queue_size_ = 2 * max(batch_sizes_)
 workers_ = cpu_count()
 
@@ -40,17 +43,15 @@ def crop_center(img, cropx, cropy):
     return cv2.resize(new_image, dsize=(y, x))
 
 
-def convert_black_to_white(batchX, crop_factor=0.9, noise_factor=0.6, crop=0, noise=0):
-    batchX = np.where(batchX <= 30, 255, batchX)
+def convert_black_to_white_v2(batchX, crop_factor=0.9, noise_factor=0.2, crop=0, noise=0):
     y, x, _ = batchX.shape
     batchX = batchX.reshape((y, x))
-    if noise == 1:
-        for i in range(len(batchX)):
-            for j in range(len(batchX[i])):
-                if batchX[i][j] == 255:
-                    batchX[i][j] = randint(int(255 * noise_factor), 255)
-    if crop == 1:
-        batchX = crop_center(batchX, int(y*crop_factor), int(x*crop_factor))
+    if batchX[0, 0] == 0.0:
+        batchX = np.where(batchX <= 30, 255, batchX)
+        if noise == 1:
+            batchX = batchX * (1 - noise_factor) + np.random.random((y, x)) * 255 * noise_factor
+        if crop == 1:
+            batchX = crop_center(batchX, int(y*crop_factor), int(x*crop_factor))
     batchX_new = batchX.reshape((y, x, 1))
     return batchX_new
 
@@ -58,26 +59,24 @@ def convert_black_to_white(batchX, crop_factor=0.9, noise_factor=0.6, crop=0, no
 def train_test_model(hparams):
     """this function trains a CNN based on the hparams chosen and outputs accuracies for every dataset"""
     # create a data generator
-    datagen = ImageDataGenerator(rescale=1. / 255, preprocessing_function=convert_black_to_white)
+    datagen = ImageDataGenerator(rescale=1. / 255, preprocessing_function=convert_black_to_white_v2)
 
-    # load and iterate training dataset
-    train_it = datagen.flow_from_directory('C:/Users/Grace/PycharmProjects/Jimi/Dataset_mini3b/train', shuffle=True,
+    # load and iterate datasets
+    train_it = datagen.flow_from_directory('C:/Users/Grace/PycharmProjects/Jimi/Dataset_mini3_6MINR_R_R/train', shuffle=True,
                                            class_mode='categorical', batch_size=hparams[HP_BATCH_SIZE], target_size=(hparams[HP_RES], hparams[HP_RES]),
                                            color_mode='grayscale')
-    # load and iterate validation dataset
-    val_it = datagen.flow_from_directory('C:/Users/Grace/PycharmProjects/Jimi/Dataset_mini3b/val', shuffle=True,
-                                         class_mode='categorical', batch_size=hparams[HP_BATCH_SIZE], target_size=(hparams[HP_RES], hparams[HP_RES]),
-                                         color_mode='grayscale')
-    # load and iterate test dataset
-    test_it = datagen.flow_from_directory('C:/Users/Grace/PycharmProjects/Jimi/Dataset_mini3b/test1', shuffle=True,
+
+    test_it = datagen.flow_from_directory('C:/Users/Grace/PycharmProjects/Jimi/Dataset_mini3_6MINR_R_R/test1', shuffle=True,
                                           class_mode='categorical', batch_size=hparams[HP_BATCH_SIZE], target_size=(hparams[HP_RES], hparams[HP_RES]),
                                           color_mode='grayscale')
-    # load and iterate test dataset
-    datagen_real = ImageDataGenerator(rescale=1. / 255)
-    test_it_real = datagen_real.flow_from_directory('C:/Users/Grace/PycharmProjects/Jimi/Dataset_mini3b/test2', shuffle=True,
+
+    test_it_2 = datagen.flow_from_directory('C:/Users/Grace/PycharmProjects/Jimi/Dataset_mini3_6MINR_R_R/test1', shuffle=True,
                                                     class_mode='categorical', batch_size=hparams[HP_BATCH_SIZE], target_size=(hparams[HP_RES], hparams[HP_RES]),
                                                     color_mode='grayscale')
 
+    val_it = datagen.flow_from_directory('C:/Users/Grace/PycharmProjects/Jimi/Dataset_mini3_6MINR_R_R/val', shuffle=True,
+                                         class_mode='categorical', batch_size=hparams[HP_BATCH_SIZE], target_size=(hparams[HP_RES], hparams[HP_RES]),
+                                         color_mode='grayscale')
 
     model = Sequential()
 
@@ -115,7 +114,7 @@ def train_test_model(hparams):
     model.add(Dropout(hparams[HP_DROPOUT_DL2]))
 
     model.add(Dense(num_class, activation='softmax'))
-    adam = keras.optimizers.Adam(learning_rate=0.001, beta_1=0.9, beta_2=0.999, amsgrad=hparams[HP_OPTIMIZER_PARAM])
+    adam = keras.optimizers.Adam(learning_rate=hparams[HP_OPTIMIZER_PARAM], beta_1=0.9, beta_2=0.999)
 
     model.compile(optimizer=adam, loss='categorical_crossentropy', metrics=['accuracy'])
 
@@ -132,7 +131,7 @@ def train_test_model(hparams):
     train_batch_generator = train_it
     validation_batch_generator = val_it
     test1_batch_generator = test_it
-    test2_batch_generator = test_it_real
+    test2_batch_generator = test_it_2
     model.fit_generator(generator=train_batch_generator,
                         epochs=epoch_upper,
                         verbose=2,
@@ -189,6 +188,7 @@ def main():
     global HP_NUM_UNITS_DLl, HP_DROPOUT_DL1, HP_NUM_UNITS_DL2, HP_DROPOUT_DL2
     global HP_OPTIMIZER_PARAM, METRIC_TRAIN_ACCURACY, METRIC_VAL_ACCURACY, METRIC_TEST1_ACCURACY, METRIC_TEST2_ACCURACY, METRIC_TIME, HP_BATCH_SIZE, HP_RES
     global session_num, run_name
+
     HP_NUM_UNITS_CLl = hp.HParam('cl1_num_units', hp.Discrete([32]))
     HP_KERNEL_SIZE_CLl = hp.HParam('cl1_kernel_size', hp.Discrete([3]))
     HP_STRIDES_CLl = hp.HParam('cl1_strides', hp.Discrete([1]))
@@ -214,7 +214,7 @@ def main():
     HP_BATCH_SIZE = hp.HParam('batch_size', hp.Discrete(batch_sizes_))
     HP_RES = hp.HParam('res', hp.Discrete(res_xys))
 
-    HP_OPTIMIZER_PARAM = hp.HParam('optimizer parameter', hp.Discrete([False]))
+    HP_OPTIMIZER_PARAM = hp.HParam('optimizer parameter', hp.Discrete([0.001]))
     METRIC_TRAIN_ACCURACY = 'Train Accuracy'
     METRIC_VAL_ACCURACY = 'Validation Accuracy'
     METRIC_TEST1_ACCURACY = 'Test1 Accuracy'
@@ -234,9 +234,9 @@ def main():
 
     session_num = session_num_init
     for a,b,c,d,e,f,g,h,i,j,k,l,m,n,o,p,q,r,s,t,u,v,w in product(HP_NUM_UNITS_CLl.domain.values, HP_KERNEL_SIZE_CLl.domain.values, HP_STRIDES_CLl.domain.values, HP_NUM_UNITS_CL2.domain.values, HP_KERNEL_SIZE_CL2.domain.values, HP_STRIDES_CL2.domain.values, HP_POOL_SIZE_PL1.domain.values, HP_DROPOUT_CL2.domain.values,
-                                                                HP_NUM_UNITS_CL3.domain.values, HP_KERNEL_SIZE_CL3.domain.values, HP_STRIDES_CL3.domain.values, HP_NUM_UNITS_CL4.domain.values, HP_KERNEL_SIZE_CL4.domain.values, HP_STRIDES_CL4.domain.values, HP_POOL_SIZE_PL2.domain.values, HP_DROPOUT_CL4.domain.values,
-                                                                HP_NUM_UNITS_DLl.domain.values, HP_DROPOUT_DL1.domain.values, HP_NUM_UNITS_DL2.domain.values, HP_DROPOUT_DL2.domain.values,
-                                                                HP_OPTIMIZER_PARAM.domain.values, HP_BATCH_SIZE.domain.values, HP_RES.domain.values):
+                                                                 HP_NUM_UNITS_CL3.domain.values, HP_KERNEL_SIZE_CL3.domain.values, HP_STRIDES_CL3.domain.values, HP_NUM_UNITS_CL4.domain.values, HP_KERNEL_SIZE_CL4.domain.values, HP_STRIDES_CL4.domain.values, HP_POOL_SIZE_PL2.domain.values, HP_DROPOUT_CL4.domain.values,
+                                                                 HP_NUM_UNITS_DLl.domain.values, HP_DROPOUT_DL1.domain.values, HP_NUM_UNITS_DL2.domain.values, HP_DROPOUT_DL2.domain.values,
+                                                                 HP_OPTIMIZER_PARAM.domain.values, HP_BATCH_SIZE.domain.values, HP_RES.domain.values):
         hparams = {HP_NUM_UNITS_CLl: a, HP_KERNEL_SIZE_CLl: b, HP_STRIDES_CLl: c, HP_NUM_UNITS_CL2: d,
                    HP_KERNEL_SIZE_CL2: e, HP_STRIDES_CL2: f, HP_POOL_SIZE_PL1: g, HP_DROPOUT_CL2: h,
                    HP_NUM_UNITS_CL3: i, HP_KERNEL_SIZE_CL3: j, HP_STRIDES_CL3: k, HP_NUM_UNITS_CL4: l,
@@ -252,6 +252,12 @@ def main():
 
 if __name__ == '__main__':
     main()
+
+    # sound alert when finished
+    duration = 750  # milliseconds
+    for freq in range(200, 800, 50):
+        winsound.Beep(freq, duration)
+        time.sleep(0.5)
 
 
 """
